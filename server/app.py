@@ -16,39 +16,42 @@ db.init_app(app)
 
 api = Api(app)
 
+@app.route('/plants/<int:id>', methods=['GET'])
+def get_plant(id):
+    plant = Plant.query.get_or_404(id)
+    return jsonify({
+        "id": plant.id,
+        "name": plant.name,
+        "image": plant.image,
+        "price": plant.price,
+        "is_in_stock": plant.is_in_stock
+    })
 
-class Plants(Resource):
+@app.route('/plants/<int:id>', methods=['PATCH'])
+def update_plant(id):
+    plant = Plant.query.get_or_404(id)
+    data = request.get_json()
 
-    def get(self):
-        plants = [plant.to_dict() for plant in Plant.query.all()]
-        return make_response(jsonify(plants), 200)
+    if "is_in_stock" in data:
+        plant.is_in_stock = data["is_in_stock"]
 
-    def post(self):
-        data = request.get_json()
+    db.session.commit()
 
-        new_plant = Plant(
-            name=data['name'],
-            image=data['image'],
-            price=data['price'],
-        )
+    return jsonify({
+        "id": plant.id,
+        "name": plant.name,
+        "image": plant.image,
+        "price": plant.price,
+        "is_in_stock": plant.is_in_stock
+    })
 
-        db.session.add(new_plant)
-        db.session.commit()
+@app.route('/plants/<int:id>', methods=['DELETE'])
+def delete_plant(id):
+    plant = Plant.query.get_or_404(id)
+    db.session.delete(plant)
+    db.session.commit()
 
-        return make_response(new_plant.to_dict(), 201)
-
-
-api.add_resource(Plants, '/plants')
-
-
-class PlantByID(Resource):
-
-    def get(self, id):
-        plant = Plant.query.filter_by(id=id).first().to_dict()
-        return make_response(jsonify(plant), 200)
-
-
-api.add_resource(PlantByID, '/plants/<int:id>')
+    return '', 204
 
 
 if __name__ == '__main__':
